@@ -1,0 +1,11 @@
+node_modules
+build
+npm-debug.log
+.env
+.DS_Store
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+.pnp.*
+globalConfig.json
+*.log

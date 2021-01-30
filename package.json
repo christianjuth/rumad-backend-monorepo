@@ -1,0 +1,37 @@
+{
+  "name": "rumad-backend-monorepo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "mongodb": "^3.6.0"
+  },
+  "scripts": {
+    "dev": "nodemon -x 'clear;node'",
+    "test": "jest --watchAll --runInBand"
+  },
+  "devDependencies": {
+    "@shelf/jest-mongodb": "^1.2.3",
+    "@types/body-parser": "^1.19.0",
+    "@types/express": "^4.17.11",
+    "@types/jest": "^26.0.20",
+    "@types/mongodb": "^3.6.3",
+    "@types/supertest": "^2.0.10",
+    "jest": "^26.1.0",
+    "nodemon": "^2.0.4",
+    "supertest": "^4.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/christianjuth/rumad-backend-monorepo.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/christianjuth/rumad-backend-monorepo/issues"
+  },
+  "homepage": "https://github.com/christianjuth/rumad-backend-monorepo#readme"
+}
