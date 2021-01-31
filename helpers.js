@@ -1,13 +1,20 @@
 const tcpPortUsed = require('tcp-port-used')
 const path = require('path')
 
+const env = process.env.NODE_ENV ?? 'development'
+exports.isDev = () => {
+  return env === 'development'
+}
+
 exports.ifPortIsFree = (port, ifFreeCallback) => {
-  tcpPortUsed.check(port, '127.0.0.1')
-  .then(inUse => {
-    if (!inUse) {
-      ifFreeCallback()
-    }
-  })
+  if (this.isDev()) {
+    tcpPortUsed.check(port, '127.0.0.1')
+    .then(inUse => {
+      if (!inUse) {
+        ifFreeCallback()
+      }
+    })
+  }
 }
 
 exports.availableRoutesString = (subAppsObj) => {
