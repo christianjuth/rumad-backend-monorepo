@@ -11,12 +11,20 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "mongodb": "^3.6.0",
+    "piglatin": "^0.1.2",
     "tcp-port-used": "^1.0.2"
   },
   "scripts": {
     "dev": "nodemon -x 'clear;node'",
     "test": "jest --watchAll --runInBand",
-    "start": "node ./index.js"
+    "start": "node ./index.js",
+    "pretty": "prettier --write .",
+    "pretty-check": "prettier --check ."
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run pretty-check"
+    }
   },
   "devDependencies": {
     "@shelf/jest-mongodb": "^1.2.3",
@@ -25,8 +33,11 @@
     "@types/jest": "^26.0.20",
     "@types/mongodb": "^3.6.3",
     "@types/supertest": "^2.0.10",
+    "eslint": "^7.19.0",
+    "husky": "^5.0.9",
     "jest": "^26.1.0",
     "nodemon": "^2.0.4",
+    "prettier": "2.2.1",
     "supertest": "^4.0.2"
   },
   "repository": {

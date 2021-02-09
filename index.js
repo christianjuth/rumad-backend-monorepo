@@ -1,7 +1,7 @@
-const express = require('express')
-const config = require('./config')
-const week2 = require('./examples/week2')
-const helpers = require('./helpers')
+const express = require("express")
+const config = require("./config")
+const week2 = require("./examples/week2")
+const helpers = require("./helpers")
 
 const app = express()
 
@@ -11,13 +11,13 @@ app.listen(config.port, () => {
 
 // Launch sub apps
 const subApps = {
-  week2
+  week2,
 }
 
 helpers.expressExposeSubApps(app, subApps)
 
 // List routes instead of 404
-const availableRoutes = helpers.availableRoutesString(subApps);
+const availableRoutes = helpers.availableRoutesString(subApps)
 app.get("*", (_, res) => {
   res.send(`
     <html>
@@ -38,10 +38,10 @@ app.get("*", (_, res) => {
             <tr>
               <th>List of routes</th>
             </tr>
-            ${availableRoutes.map(r => `<tr><td>${r}</td></tr>`).join('')}
+            ${availableRoutes.map((r) => `<tr><td>${r}</td></tr>`).join("")}
           </table>
 
         </body>
     </html>
   `)
-});
+})
