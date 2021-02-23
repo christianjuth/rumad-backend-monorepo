@@ -24,9 +24,9 @@ const uuid = new UUID()
 let tweets = []
 
 /**
- * Post a tweet when the client POSTS to this endpoint
+ * POST a tweet when the client POSTS to this endpoint
  */
-app.post("/tweet", (req, res) => {
+app.post("/tweets", (req, res) => {
   const { handle, message, parentId } = req.body
 
   if ([handle, message].includes(undefined)) {
@@ -34,8 +34,8 @@ app.post("/tweet", (req, res) => {
     return
   }
 
-  if (message.length < 1 || message.length > 280) {
-    res.status(400).send('Error: message should be 1 to 280 characters.')
+  if (message.length < 2 || message.length > 280) {
+    res.status(400).send('Error: tweet should be 2 to 280 characters.')
     return
   }
 
@@ -49,6 +49,7 @@ app.post("/tweet", (req, res) => {
     message,
     parentId,
     createdAt: new Date(),
+    updatedAt: new Date(),
     id: uuid(),
     likes: 0
   }
@@ -60,7 +61,7 @@ app.post("/tweet", (req, res) => {
 /**
  * DELETE a tweet by its id
  */
-app.delete("/tweet/:id", (req, res) => {
+app.delete("/tweets/:id", (req, res) => {
   const { id } = req.params
 
   const tweet = tweets.find(t => t.id === id)
@@ -77,7 +78,7 @@ app.delete("/tweet/:id", (req, res) => {
 /**
  * GET a feed of all tweets
  */
-app.get("/feed", (req, res) => {
+app.get("/tweets", (req, res) => {
   // Filter tweets that are replies
   res.send(tweets.filter(t => !t.parentId))
 })
@@ -85,7 +86,7 @@ app.get("/feed", (req, res) => {
 /**
  * GET replies to a tweet
  */
-app.get("/tweet/:id/replies", (req, res) => {
+app.get("/tweets/:id/replies", (req, res) => {
   const { id } = req.params
   res.send(tweets.filter(t => t.parentId === id))
 })
@@ -93,7 +94,7 @@ app.get("/tweet/:id/replies", (req, res) => {
 /**
  * Add a like to a tweet using a POST request
  */
-app.post("/tweet/:id/like", (req, res) => {
+app.post("/tweets/:id/like", (req, res) => {
   const { id } = req.params
 
   const tweetIndex = tweets.findIndex(t => t.id === id)
