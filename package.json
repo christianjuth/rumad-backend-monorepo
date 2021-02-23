@@ -17,7 +17,7 @@
     "uuid": "^8.3.2"
   },
   "scripts": {
-    "dev": "nodemon -x 'clear;node'",
+    "dev": "nodemon",
     "test": "jest --watchAll --runInBand",
     "start": "node ./index.js",
     "pretty": "prettier --write .",
