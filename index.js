@@ -2,6 +2,7 @@ const express = require("express")
 const config = require("./config")
 const week2 = require("./examples/week2")
 const week3 = require("./examples/week3")
+const week4 = require("./examples/week4")
 const helpers = require("./helpers")
 
 const app = express()
@@ -13,7 +14,8 @@ app.listen(config.port, () => {
 // Launch sub apps
 const subApps = {
   week2,
-  week3
+  week3,
+  week4
 }
 
 helpers.expressExposeSubApps(app, subApps)

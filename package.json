@@ -13,7 +13,8 @@
     "mongodb": "^3.6.0",
     "piglatin": "^0.1.2",
     "tcp-port-used": "^1.0.2",
-    "translate": "^1.2.1"
+    "translate": "^1.2.1",
+    "uuid": "^8.3.2"
   },
   "scripts": {
     "dev": "nodemon -x 'clear;node'",
