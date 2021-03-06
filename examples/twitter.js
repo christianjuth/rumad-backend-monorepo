@@ -23,6 +23,41 @@ const uuid = new UUID()
 
 let tweets = []
 
+function getTweets({
+  includeReplies = false,
+  handles
+}) {
+  let output = tweets
+  
+  if (!includeReplies) {
+    output = output.filter(t => {
+      return !t.parentId || includeReplies
+    })
+  }
+
+  if (handles) {
+    output = output.filter(t => {
+      return handles ? handles.includes(t.handle) : true
+    })
+  }
+
+  return output
+}
+
+function getTweet({
+  id,
+  includeReplies = false
+}) {
+  const tweet = tweets.find(t => t.id === id)
+
+  if (includeReplies) {
+    const replies = tweets.filter(t => t.parentId === id)
+    return [tweet, ...replies]
+  }
+
+  return tweet
+}
+
 /**
  * POST a tweet when the client POSTS to this endpoint
  */
@@ -39,7 +74,7 @@ app.post('/tweets', (req, res) => {
     return
   }
 
-  const parent = tweets.find(t => t.id === parentId)
+  const parent = getTweet({ id: parentId })
   if (parentId !== undefined && parent === undefined) {
     res.status(404).send('Error: no parent tweet with that id.')
     return
@@ -54,6 +89,7 @@ app.post('/tweets', (req, res) => {
     id: uuid(),
     likes: 0,
     replies: 0,
+    pinned: false
   }
   tweets.unshift(tweet)
 
@@ -68,7 +104,8 @@ app.post('/tweets', (req, res) => {
  * GET a feed of all tweets
  */
 app.get('/tweets', (req, res) => {
-  res.send(tweets.filter(t => t.parentId === undefined))
+  const { handle: handles } = req.query
+  res.send(getTweets({ handles }))
 })
 
 /**
@@ -76,7 +113,7 @@ app.get('/tweets', (req, res) => {
  */
 app.get('/profile/:handle', (req, res) => {
   const { handle } = req.params 
-  res.send(tweets.filter(t => t.handle === handle))
+  res.send(getTweets({ handles: handle }))
 })
 
 /**
@@ -85,7 +122,7 @@ app.get('/profile/:handle', (req, res) => {
 app.delete('/tweets/:id', (req, res) => {
   const { id } = req.params
   
-  const tweet = tweets.find(t => t.id === id)
+  const tweet = getTweet({ id })
 
   if (tweet === undefined) {
     res.status(404).send('Error: no tweet with that id.')
@@ -98,18 +135,17 @@ app.delete('/tweets/:id', (req, res) => {
 })
 
 /**
- * GET replies to a tweet
+ * GET tweet
  */
-app.get("/tweets/:id/replies", (req, res) => {
+app.get("/tweets/:id", (req, res) => {
   const { id } = req.params
-  console.log(id)
-  res.send(tweets.filter(t => t.parentId === id))
+  res.send(getTweet({ id, includeReplies: true }))
 })
 
 /**
  * Add a like to a tweet using a POST request
  */
-app.post('/tweets/:id', (req, res) => {
+app.post('/tweets/:id/like', (req, res) => {
   const { id } = req.params
   
   const tweet = tweets.find(t => t.id === id)
