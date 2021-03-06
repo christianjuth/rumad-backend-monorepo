@@ -1,5 +1,6 @@
 const tcpPortUsed = require("tcp-port-used")
 const path = require("path")
+const cors = require('cors')
 
 const env = process.env.NODE_ENV ?? "development"
 exports.isDev = () => {
@@ -32,6 +33,6 @@ exports.availableRoutesString = (subAppsObj) => {
 
 exports.expressExposeSubApps = (app, subAppsObj) => {
   Object.entries(subAppsObj).forEach(([key, subApp]) => {
-    app.use(`/${key}`, subApp.app)
+    app.use(`/${key}`, cors(), subApp.app)
   })
 }
