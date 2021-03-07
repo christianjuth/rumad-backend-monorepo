@@ -50,7 +50,7 @@ function getTweet({
 }) {
   const tweet = tweets.find(t => t.id === id)
 
-  if (includeReplies) {
+  if (includeReplies && tweet !== undefined) {
     const replies = tweets.filter(t => t.parentId === id)
     return [tweet, ...replies]
   }
@@ -149,7 +149,17 @@ app.delete('/tweets/:id', (req, res) => {
  */
 app.get("/tweets/:id", (req, res) => {
   const { id } = req.params
-  res.send(getTweet({ id, includeReplies: true }))
+
+  const tweet = getTweet({ id, includeReplies: true })
+
+  if (tweet === undefined) {
+    res.status(404).send({
+      error: 'no tweet with that id.'
+    })
+    return
+  }
+
+  res.send(tweet)
 })
 
 /**
