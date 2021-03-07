@@ -65,18 +65,24 @@ app.post('/tweets', (req, res) => {
   const { message, handle, parentId } = req.body
 
   if ([message, handle].includes(undefined)) {
-    res.status(400).send('Error: message and handle required.')
+    res.status(400).send({
+      error: 'message and handle required.'
+    })
     return
   }
 
   if (message.length < 2 || message.length > 280) {
-    res.status(400).send('Error: tweet should be 2 to 280 characters.')
+    res.status(400).send({
+      error: 'tweet should be 2 to 280 characters.'
+    })
     return
   }
 
   const parent = getTweet({ id: parentId })
   if (parentId !== undefined && parent === undefined) {
-    res.status(404).send('Error: no parent tweet with that id.')
+    res.status(404).send({
+      error: 'no parent tweet with that id.'
+    })
     return
   }
 
@@ -97,7 +103,7 @@ app.post('/tweets', (req, res) => {
     parent.replies++
   }
 
-  res.send('Created new tweet')
+  res.send(tweet)
 })
 
 /**
@@ -125,13 +131,17 @@ app.delete('/tweets/:id', (req, res) => {
   const tweet = getTweet({ id })
 
   if (tweet === undefined) {
-    res.status(404).send('Error: no tweet with that id.')
+    res.status(404).send({
+      error: 'no tweet with that id.'
+    })
     return
   }
 
   tweets = tweets.filter(t => t.id !== id)
 
-  res.send(`Deleted tweet by ${tweet.handle}.`)
+  res.send({
+    success: true
+  })
 })
 
 /**
@@ -151,13 +161,17 @@ app.post('/tweets/:id/like', (req, res) => {
   const tweet = tweets.find(t => t.id === id)
 
   if (tweet === undefined) {
-    res.status(404).send('Error: no tweet with that id.')
+    res.status(404).send({
+      error: 'no tweet with that id.'
+    })
     return
   }
 
   tweet.likes++
 
-  res.send(`Liked tweet with by ${tweet.handle}.`)
+  res.send({
+    success: true
+  })
 })
 
 helpers.ifPortIsFree(config.port, () => {
