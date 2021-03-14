@@ -137,7 +137,7 @@ app.delete('/tweets/:id', (req, res) => {
     return
   }
 
-  tweets = tweets.filter(t => t.id !== id)
+  tweets = tweets.filter(t => t.id !== id && t.parentId !== id)
 
   res.send({
     success: true
