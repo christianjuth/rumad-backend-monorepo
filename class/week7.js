@@ -2,8 +2,10 @@ const express = require("express")
 const bodyParser = require("body-parser")
 const bcrypt = require("bcrypt")
 const { v4: uuid } = require("uuid")
+const jwt = require('jsonwebtoken');
 
 const SALT_ROUNDS = 10
+const JWT_SECRET = 'shhhhhh'
 
 const app = express()
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -24,13 +26,27 @@ function redactUserInfo(user) {
 
 /**
  * Authenticate user using username and password or token. Returns boolean or new auth token.
+ * 
+ * Returns: user+newToken, user, false (auth failed)
  */
-async function authUser({ username, password }) {
+async function authUser({ username, password, token }) {
   // token auth
-
-    // verify jwt
-
-    // check that password hasn't changed since token was created
+  if (token) {
+    try {
+      const { id: userId, passwordUpdatedAt } = jwt.verify(token, JWT_SECRET)
+      const user = users.find(u => {
+        // check that password hasn't changed since token was created
+        return u.id === userId && u.passwordUpdatedAt === passwordUpdatedAt
+      })
+      if (!user) {
+        return false
+      }
+      return redactUserInfo(user)
+    } catch (e) {
+      console.log(e)
+      return false
+    }
+  }
 
   // password auth
   const user = users.find(u => u.username === username)
@@ -46,15 +62,18 @@ async function authUser({ username, password }) {
   // return redacted user with new token
   return {
     ...redactUserInfo(user),
-    token: ''
+    token: getAuthToken(user)
   }
 }
 
 /**
  * Generate a new auth token for the user
  */
-function getAuthToken() {
-
+function getAuthToken(user) {
+  return jwt.sign({
+    id: user.id,
+    passwordUpdatedAt: user.passwordUpdatedAt
+  }, JWT_SECRET, { expiresIn: '1h' });
 }
 
 /**
@@ -71,11 +90,13 @@ async function updateUserPassword(user, password) {
  */
 async function authMiddleware(req, res, next) {
   const { username, password } = req.body
+  const { authorization } = req.headers
+  const token = authorization?.replace(/^Bearer\s/,'')
 
-  const user = await authUser({ username, password })
+  const user = await authUser({ username, password, token })
   if (!user) {
     res.status(401).send({
-      error: 'incorrect username or password'
+      error: 'incorrect username or password' // FIX THIS
     })
     return
   }
@@ -124,7 +145,7 @@ app.post('/login', authMiddleware, (req, res) => {
 /**
  * Example authenticated endpoint
  */
-app.get('/auth', authMiddleware, () => {
+app.get('/auth', authMiddleware, (req, res) => {
   // return user used for auth
   res.send({
     test: 'test'
@@ -134,12 +155,22 @@ app.get('/auth', authMiddleware, () => {
 /**
  * Change user password. Invalidates old tokens.
  */
-app.post('/change-password', () => {
-  // retrieve user
+app.post('/change-password', authMiddleware, async (req, res) => {
+  const { newPassword } = req.body
+
+  const user = users.find(u => {
+    return u.id === req.user.id
+  })
 
   // update password
+  await updateUserPassword(user, newPassword)
+  const newToken = getAuthToken(user)
 
   // return auth token
+  res.send({
+    ...redactUserInfo(user),
+    token: newToken
+  })
 })
 
 /**
