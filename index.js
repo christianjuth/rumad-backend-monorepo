@@ -3,6 +3,7 @@ const config = require("./config")
 const week2 = require("./examples/week2")
 const week3 = require("./examples/week3")
 const twitter = require("./examples/twitter")
+const twitter2 = require("./examples/twitter2")
 const auth = require("./examples/auth")
 const helpers = require("./helpers")
 
@@ -17,7 +18,8 @@ const subApps = {
   week2,
   week3,
   twitter,
-  auth
+  auth,
+  twitter2
 }
 
 helpers.expressExposeSubApps(app, subApps)

@@ -1,37 +1,26 @@
-const config = require('../config')
+require('dotenv').config()
+
+const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 const express = require('express')
-const bcrypt = require("bcrypt")
-// const { v4: uuid } = require("uuid")
-const jwt = require('jsonwebtoken')
 const bodyParser = require('body-parser')
-const cors = require('cors');
-var cookieParser = require('cookie-parser')
+const bcrypt = require("bcrypt")
+const jwt = require('jsonwebtoken')
+
+const config = require("../config")
+const helpers = require("../helpers")
 
 const SALT_ROUNDS = 10
 const JWT_SECRET = 'supersecretkey'
 
 const app = express()
-app.use(cors({
-  origin: config,
-  credentials: true
-}));
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 app.use(bodyParser.raw())
-app.use(cookieParser())
-
-async function hashedPassword(password) {
-  return {
-    hashedPassword: await bcrypt.hash(password, SALT_ROUNDS),
-    passwordUpdatedAt: Date.now()
-  }
-}
 
 function redactUserInfo(user) {
   user = { ...user }
   delete user.hashedPassword
-  delete user.passwordUpdatedAt
   return user
 }
 
@@ -39,23 +28,21 @@ function redactUserInfo(user) {
  * Authenticate user using username and password or token. Returns boolean or new auth token.
  */
 async function authUser({ username, password, token }) {
-  const users = db.collection('users')
+  const users = db.collection('users');
 
   if (token) {
     try {
       const tokenValue = jwt.verify(token, JWT_SECRET)
       const user = await users.findOne({ username: tokenValue.username })
-      const validToken = tokenValue.passwordUpdatedAt === user.passwordUpdatedAt
-      return user && validToken ? redactUserInfo(user) : false
+      return user ? redactUserInfo(user) : false
     } catch(e) {
       console.log(e)
       return false
     }
   }
 
-  // const user = users.find(u => u.username === username)
   const user = await users.findOne({ username })
-  if (user === null) {
+  if (!user) {
     return false
   }
 
@@ -73,15 +60,13 @@ async function authUser({ username, password, token }) {
 function getAuthToken(user) {
   return jwt.sign({ 
     username: user.username, 
-    passwordUpdatedAt: user.passwordUpdatedAt 
   }, JWT_SECRET, { expiresIn: '1h' })
 }
 
 async function authMiddleware(req, res, next) {
   const { username, password } = req.body
   const { authorization } = req.headers
-  let token = authorization ?? req.cookies.authToken ?? ''
-  token = token.replace(/^Bearer\s/,'')
+  const token = authorization?.replace(/^Bearer\s/,'')
 
   const user = await authUser({ username, password, token })
   if (!user) {
@@ -91,28 +76,21 @@ async function authMiddleware(req, res, next) {
     return
   }
 
-  if (username && password) {
-    res.cookie('authToken', `Bearer ${user.token}`, { 
-      maxAge: 1000 * 60 * 60 * 12, // 12 hours
-      httpOnly: true, 
-      // secure: true 
-    });
-  }
-
   req.user = user
   next()
 }
 
-const MongoClient = require('mongodb').MongoClient;
-const client = new MongoClient(config.mongoUrl, { useUnifiedTopology: true });
+// Connect to Mongo DB client
 let db;
-
+const client = new MongoClient(config.mongoUrl, { useUnifiedTopology: true });
+// Use connect method to connect to the server
 client.connect(function(err) {
   assert.strictEqual(null, err);
   db = client.db('twitter');
 
-  const users = db.collection('users');
-  users.createIndex({ username: 1 }, { unique: true })
+  // setup users
+  const users = db.collection('users')
+  users.createIndex( { username: 1 }, { unique: true } )
 
   app.emit('db-connected')
 });
@@ -120,40 +98,41 @@ client.connect(function(err) {
 app.post('/signup', async (req, res) => {
   const { username, password } = req.body
 
-  const users = db.collection('users');
+  // create user
+  const users = db.collection('users')
+
+  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
 
   try {
     const user = await users.insertOne({
       username,
-      ...await hashedPassword(password)
+      hashedPassword
     })
-    res.send(redactUserInfo(user.ops))  
-  } catch(e) {
+    res.send(redactUserInfo(user.ops[0]))
+  } catch(err) {
     res.status(400).send({
-      error: `Username "${username}" is taken`
+      error: `username "${username}" is taken`
     })
   }
 })
 
 app.post('/login', authMiddleware, (req, res) => {
   res.send({
-    token: req.user.token
-  })
+    user: req.user
+  }) 
 })
 
 app.post('/logout', (req, res) => {
-  res.clearCookie("authToken")
-  res.send({
-    success: true
-  })
+  
 })
 
 app.post('/tweets', authMiddleware, async (req, res) => {
-  const { message, parentId } = req.body
+  const { message } = req.body
+  const { username } = req.user
 
   if (message === undefined) {
     res.status(400).send({
-      error: 'message is required.'
+      error: 'message and handle required.'
     })
     return
   }
@@ -165,37 +144,27 @@ app.post('/tweets', authMiddleware, async (req, res) => {
     return
   }
 
-  const tweets = db.collection('tweets')
-
-  const parent = await getTweet.findOne({ id: parentId })
-  if (parentId !== undefined && parent === undefined) {
-    res.status(404).send({
-      error: 'no parent tweet with that id.'
-    })
-    return
-  }
+  const tweets = db.collection('tweets') 
 
   const tweet = await tweets.insertOne({
-    username: req.user.username,
     message,
-    // parentId,
+    username
   })
-
-  // if (parent !== undefined) {
-  //   parent.replies++
-  // }
 
   res.send(tweet.ops)
 })
 
 app.get('/tweets', async (req, res) => {
-  const tweets = db.collection('tweets')
+  const tweets = db.collection('tweets') 
   const data = await tweets.find().sort({_id: -1})
   res.send(await data.toArray())
 })
 
 app.on('db-connected', () => {
-  app.listen(config.port, () => {
-    console.log(`app listening on http://localhost:${config.port}`)
+  helpers.ifPortIsFree(config.port, () => {
+    app.listen(config.port, () => {
+      console.log(`app listening on http://localhost:${config.port}`)
+    })
   })
 })
+exports.app = app
